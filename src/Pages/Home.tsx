@@ -1,27 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Task } from "../Interfaces/task";
-import { loadTasks, saveTasks } from "../utils/storage";
 import TaskForm from "../Components/TaskForm";
 import TaskList from "../Components/TaskList";
 
 function uid() {
-    console.log("HOME TSX LOADED ✅");
-
   return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random();
 }
 
 export default function Home() {
-    console.log("HOME TSX LOADED ✅");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    setTasks(loadTasks());
-  }, []);
+    async function fetchTasks() {
+      try {
+        const response = await fetch("http://localhost:5050/tasks");
+        const data = await response.json();
+        setTasks(data);
+      } catch (error) {
+        console.error("Tasklar alınamadı:", error);
+      }
+    }
 
-  useEffect(() => {
-    saveTasks(tasks);
-  }, [tasks]);
+    fetchTasks();
+  }, []);
 
   function addTask(input: Omit<Task, "id" | "createdAt">) {
     const newTask: Task = { ...input, id: uid(), createdAt: Date.now() };
@@ -49,11 +51,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-
-        
-      {/* HERO */}
       <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600">
-
         <div className="mx-auto max-w-4xl px-6 py-10 text-center text-white">
           <h1 className="text-4xl font-bold">🚀 TaskBoard</h1>
           <p className="mt-2 text-lg opacity-90">
@@ -69,7 +67,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CONTENT */}
       <div className="mx-auto -mt-10 max-w-4xl px-6 pb-16">
         <div className="rounded-2xl bg-white p-6 shadow-xl">
           <div className="mb-6">
