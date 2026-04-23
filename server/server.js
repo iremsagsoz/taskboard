@@ -32,6 +32,74 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
+app.post("/tasks", async (req, res) => {
+  try {
+    const { title, description, status } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: "Title is required" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO tasks (title, description, status)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [title, description || null, status || "todo"]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error adding task:", error);
+    res.status(500).json({ error: "Failed to add task" });
+  }
+});
+
+app.delete("/tasks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      "DELETE FROM tasks WHERE id = $1 RETURNING *",
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    res.json({ message: "Task deleted", task: result.rows[0] });
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    res.status(500).json({ error: "Failed to delete task" });
+  }
+});
+
+app.put("/tasks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, status } = req.body;
+
+    const result = await pool.query(
+      `UPDATE tasks
+       SET title = $1,
+           description = $2,
+           status = $3
+       WHERE id = $4
+       RETURNING *`,
+      [title, description || null, status, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error updating task:", error);
+    res.status(500).json({ error: "Failed to update task" });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
