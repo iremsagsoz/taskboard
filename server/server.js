@@ -34,18 +34,24 @@ app.get("/tasks", async (req, res) => {
 
 app.post("/tasks", async (req, res) => {
   try {
-    const { title, description, status } = req.body;
+    const { title, description, status, priority, due_date } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ error: "Title is required" });
     }
 
-    const result = await pool.query(
-      `INSERT INTO tasks (title, description, status)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [title, description || null, status || "todo"]
-    );
+   const result = await pool.query(
+  `INSERT INTO tasks (title, description, status, priority, due_date)
+   VALUES ($1, $2, $3, $4, $5)
+   RETURNING *`,
+  [
+    title,
+    description || null,
+    status || "todo",
+    priority || "medium",
+    due_date || null,
+  ]
+);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -77,18 +83,19 @@ app.delete("/tasks/:id", async (req, res) => {
 app.put("/tasks/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, status } = req.body;
+   const { title, description, status, priority, due_date } = req.body;
 
     const result = await pool.query(
-      `UPDATE tasks
-       SET title = $1,
-           description = $2,
-           status = $3
-       WHERE id = $4
-       RETURNING *`,
-      [title, description || null, status, id]
-    );
-
+  `UPDATE tasks
+   SET title = $1,
+       description = $2,
+       status = $3,
+       priority = $4,
+       due_date = $5
+   WHERE id = $6
+   RETURNING *`,
+  [title, description || null, status, priority, due_date || null, id]
+);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Task not found" });
     }

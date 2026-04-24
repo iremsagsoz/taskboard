@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Task, TaskStatus } from "../Interfaces/task";
+import type { Task, TaskPriority, TaskStatus } from "../Interfaces/task";
 
 type Props = {
   task: Task;
@@ -14,12 +14,26 @@ function statusBadge(status: TaskStatus) {
   return `${base} bg-emerald-100 text-emerald-800`;
 }
 
+function priorityBadge(priority: TaskPriority) {
+  const base = "text-xs rounded-full px-2 py-1 font-medium";
+  if (priority === "low") return `${base} bg-blue-50 text-blue-700`;
+  if (priority === "medium") return `${base} bg-violet-50 text-violet-700`;
+  return `${base} bg-red-50 text-red-700`;
+}
+
+function formatDate(date?: string) {
+  if (!date) return "Deadline yok";
+  return new Date(date).toLocaleDateString("tr-TR");
+}
+
 export default function TaskItem({ task, onDelete, onUpdate }: Props) {
   const [editing, setEditing] = useState(false);
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(task.status);
+  const [priority, setPriority] = useState<TaskPriority>(task.priority);
+  const [dueDate, setDueDate] = useState(task.dueDate ?? "");
 
   const inputClass =
     "mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100";
@@ -30,16 +44,22 @@ export default function TaskItem({ task, onDelete, onUpdate }: Props) {
     setTitle(task.title);
     setDescription(task.description ?? "");
     setStatus(task.status);
+    setPriority(task.priority);
+    setDueDate(task.dueDate ?? "");
     setEditing(false);
   }
 
   function save() {
     if (!canSave) return;
+
     onUpdate(task.id, {
       title: title.trim(),
       description: description.trim() || undefined,
       status,
+      priority,
+      dueDate: dueDate || undefined,
     });
+
     setEditing(false);
   }
 
@@ -48,18 +68,27 @@ export default function TaskItem({ task, onDelete, onUpdate }: Props) {
       {!editing ? (
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h4 className="truncate font-semibold text-slate-900">{task.title}</h4>
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="truncate font-semibold text-slate-900">
+                {task.title}
+              </h4>
               <span className={statusBadge(task.status)}>{task.status}</span>
+              <span className={priorityBadge(task.priority)}>
+                {task.priority}
+              </span>
             </div>
 
             {task.description ? (
-              <p className="mt-1 text-sm text-slate-600 break-words">
+              <p className="mt-1 break-words text-sm text-slate-600">
                 {task.description}
               </p>
             ) : (
-              <p className="mt-1 text-sm text-slate-400 italic">Açıklama yok</p>
+              <p className="mt-1 text-sm italic text-slate-400">Açıklama yok</p>
             )}
+
+            <p className="mt-2 text-xs text-slate-500">
+              Deadline: {formatDate(task.dueDate)}
+            </p>
           </div>
 
           <div className="flex shrink-0 gap-2">
@@ -79,9 +108,12 @@ export default function TaskItem({ task, onDelete, onUpdate }: Props) {
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-semibold text-slate-900">Görevi düzenle</p>
-            <span className={statusBadge(status)}>{status}</span>
+            <div className="flex gap-2">
+              <span className={statusBadge(status)}>{status}</span>
+              <span className={priorityBadge(priority)}>{priority}</span>
+            </div>
           </div>
 
           <div>
@@ -115,6 +147,31 @@ export default function TaskItem({ task, onDelete, onUpdate }: Props) {
               <option value="doing">Doing</option>
               <option value="done">Done</option>
             </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">Öncelik</label>
+            <select
+              className={inputClass}
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as TaskPriority)}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Deadline
+            </label>
+            <input
+              type="date"
+              className={inputClass}
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
           </div>
 
           <div className="flex gap-2 pt-1">

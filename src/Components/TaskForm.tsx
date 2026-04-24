@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Task, TaskStatus } from "../Interfaces/task";
+import type { Task, TaskPriority, TaskStatus } from "../Interfaces/task";
 
 type Props = {
   onAdd: (task: Omit<Task, "id" | "createdAt">) => void;
@@ -9,6 +9,8 @@ export default function TaskForm({ onAdd }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
+  const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [dueDate, setDueDate] = useState("");
 
   const disabled = useMemo(() => title.trim().length < 2, [title]);
 
@@ -20,11 +22,15 @@ export default function TaskForm({ onAdd }: Props) {
       title: title.trim(),
       description: description.trim() || undefined,
       status,
+      priority,
+      dueDate: dueDate || undefined,
     });
 
     setTitle("");
     setDescription("");
     setStatus("todo");
+    setPriority("medium");
+    setDueDate("");
   }
 
   const inputClass =
@@ -34,7 +40,9 @@ export default function TaskForm({ onAdd }: Props) {
     <div className="rounded-2xl border bg-white p-4 shadow-sm">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-slate-900">Yeni görev</h3>
-        <p className="text-sm text-slate-600">Başlık gir, durum seç, ekle.</p>
+        <p className="text-sm text-slate-600">
+          Başlık gir, öncelik ve deadline seç, ekle.
+        </p>
       </div>
 
       <form onSubmit={submit} className="space-y-4">
@@ -71,6 +79,31 @@ export default function TaskForm({ onAdd }: Props) {
             <option value="doing">Doing</option>
             <option value="done">Done</option>
           </select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-slate-700">Öncelik</label>
+          <select
+            className={inputClass}
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as TaskPriority)}
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-slate-700">
+            Deadline
+          </label>
+          <input
+            type="date"
+            className={inputClass}
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
         </div>
 
         <button
