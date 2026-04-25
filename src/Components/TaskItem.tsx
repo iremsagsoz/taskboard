@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import type { Task, TaskPriority, TaskStatus } from "../Interfaces/task";
 
+
+
 type Props = {
   task: Task;
   onDelete: (id: string) => void;
@@ -27,6 +29,8 @@ function formatDate(date?: string) {
 }
 
 export default function TaskItem({ task, onDelete, onUpdate }: Props) {
+  const isOverdue =
+  task.dueDate && new Date(task.dueDate) < new Date();
   const [editing, setEditing] = useState(false);
 
   const [title, setTitle] = useState(task.title);
@@ -64,14 +68,26 @@ export default function TaskItem({ task, onDelete, onUpdate }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border bg-white p-4 shadow-sm">
+    <div
+  className={`rounded-2xl border bg-white p-4 shadow-sm ${
+    isOverdue ? "border-red-300" : "border-slate-200"
+  }`}
+>
       {!editing ? (
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h4 className="truncate font-semibold text-slate-900">
-                {task.title}
-              </h4>
+                      <div className="flex items-center gap-2">
+          <h4 className="truncate font-semibold text-slate-900">
+            {task.title}
+          </h4>
+
+          {isOverdue && (
+            <span className="text-xs text-red-600 font-semibold">
+              ⚠️ Gecikti
+            </span>
+          )}
+        </div>
               <span className={statusBadge(task.status)}>{task.status}</span>
               <span className={priorityBadge(task.priority)}>
                 {task.priority}
