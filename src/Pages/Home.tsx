@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Task } from "../Interfaces/task";
+import AuthForm from "../Components/AuthForm";
 import TaskForm from "../Components/TaskForm";
 import TaskList from "../Components/TaskList";
 
 const API_URL = "http://localhost:5050";
+
+type User = {
+  id: number;
+  email: string;
+};
 
 function mapTaskFromApi(data: any): Task {
   return {
@@ -18,13 +24,44 @@ function mapTaskFromApi(data: any): Task {
 }
 
 export default function Home() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
+    async function checkAuth() {
+      try {
+        const response = await fetch(`${API_URL}/auth/me`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          setUser(null);
+          return;
+        }
+
+        const data = await response.json();
+        setUser(data.user);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoadingAuth(false);
+      }
+    }
+
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
     async function fetchTasks() {
       try {
-        const response = await fetch(`${API_URL}/tasks`);
+        const response = await fetch(`${API_URL}/tasks`, {
+          credentials: "include",
+        });
 
         if (!response.ok) {
           throw new Error("Tasklar alınamadı");
@@ -38,12 +75,13 @@ export default function Home() {
     }
 
     fetchTasks();
-  }, []);
+  }, [user]);
 
   async function addTask(input: Omit<Task, "id" | "createdAt">) {
     try {
       const response = await fetch(`${API_URL}/tasks`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -73,6 +111,7 @@ export default function Home() {
     try {
       const response = await fetch(`${API_URL}/tasks/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -91,7 +130,6 @@ export default function Home() {
   ) {
     try {
       const currentTask = tasks.find((t) => t.id === id);
-
       if (!currentTask) return;
 
       const updatedTaskPayload = {
@@ -104,6 +142,7 @@ export default function Home() {
 
       const response = await fetch(`${API_URL}/tasks/${id}`, {
         method: "PUT",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -138,6 +177,18 @@ export default function Home() {
     );
   }, [tasks, query]);
 
+  if (loadingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100">
+        <p className="text-slate-600">Yükleniyor...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthForm onLogin={setUser} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600">
@@ -146,6 +197,7 @@ export default function Home() {
           <p className="mt-2 text-lg opacity-90">
             Görevlerini öncelik, durum ve deadline ile planla.
           </p>
+          <p className="mt-2 text-sm opacity-80">{user.email}</p>
 
           <div className="mt-6 flex justify-center gap-4">
             <div className="rounded-xl bg-white/20 px-6 py-3 backdrop-blur">
