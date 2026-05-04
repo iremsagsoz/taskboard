@@ -162,6 +162,16 @@ export default function Home() {
     }
   }
 
+  async function logout() {
+    await fetch(`${API_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    setUser(null);
+    setTasks([]);
+  }
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
 
@@ -191,13 +201,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600">
+      <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 shadow-lg">
         <div className="mx-auto max-w-4xl px-6 py-10 text-center text-white">
           <h1 className="text-4xl font-bold">🚀 Smart Planner</h1>
           <p className="mt-2 text-lg opacity-90">
             Görevlerini öncelik, durum ve deadline ile planla.
           </p>
-          <p className="mt-2 text-sm opacity-80">{user.email}</p>
+
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <span className="rounded-full bg-white/15 px-3 py-1 text-sm opacity-90">
+              {user.email}
+            </span>
+            <button
+              onClick={logout}
+              className="rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium hover:bg-white/30"
+            >
+              Çıkış Yap
+            </button>
+          </div>
 
           <div className="mt-6 flex justify-center gap-4">
             <div className="rounded-xl bg-white/20 px-6 py-3 backdrop-blur">
@@ -209,11 +230,11 @@ export default function Home() {
       </div>
 
       <div className="mx-auto -mt-10 max-w-4xl px-6 pb-16">
-        <div className="rounded-2xl bg-white p-6 shadow-xl">
+        <div className="rounded-2xl bg-white p-6 shadow-xl transition hover:shadow-2xl">
           <div className="mb-6">
             <label className="text-sm font-medium text-slate-600">Ara</label>
             <input
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
               placeholder="Başlık, açıklama, durum, öncelik veya tarih..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}

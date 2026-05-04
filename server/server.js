@@ -42,10 +42,7 @@ app.post("/auth/register", async (req, res) => {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
 
-    const existingUser = await pool.query(
-      "SELECT id FROM users WHERE email = $1",
-      [email]
-    );
+    const existingUser = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
 
     if (existingUser.rows.length > 0) {
       return res.status(409).json({ error: "Email is already registered" });
@@ -88,11 +85,7 @@ app.post("/auth/login", async (req, res) => {
     }
 
     const user = result.rows[0];
-
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.password_hash
-    );
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid email or password" });
@@ -129,6 +122,16 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
+app.post("/auth/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false,
+  });
+
+  res.json({ message: "Logged out" });
+});
+
 function authenticateUser(req, res, next) {
   const token = req.cookies.token;
 
@@ -157,9 +160,10 @@ app.get("/auth/me", authenticateUser, (req, res) => {
 app.get("/tasks", authenticateUser, async (req, res) => {
   try {
     const result = await pool.query(
-  "SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC",
-  [req.user.userId]
-);
+      "SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC",
+      [req.user.userId]
+    );
+
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching tasks:", error);
@@ -175,19 +179,19 @@ app.post("/tasks", authenticateUser, async (req, res) => {
       return res.status(400).json({ error: "Title is required" });
     }
 
-const result = await pool.query(
-  `INSERT INTO tasks (title, description, status, priority, due_date, user_id)
-   VALUES ($1, $2, $3, $4, $5, $6)
-   RETURNING *`,
-  [
-    title,
-    description || null,
-    status || "todo",
-    priority || "medium",
-    due_date || null,
-    req.user.userId
-  ]
-);
+    const result = await pool.query(
+      `INSERT INTO tasks (title, description, status, priority, due_date, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [
+        title,
+        description || null,
+        status || "todo",
+        priority || "medium",
+        due_date || null,
+        req.user.userId,
+      ]
+    );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -196,14 +200,14 @@ const result = await pool.query(
   }
 });
 
-app.delete("/tasks/:id", async (req, res) => {
+app.delete("/tasks/:id", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
 
     const result = await pool.query(
-  "DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING *",
-  [id, req.user.userId]
-);
+      "DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING *",
+      [id, req.user.userId]
+    );
 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Task not found" });
@@ -216,22 +220,23 @@ app.delete("/tasks/:id", async (req, res) => {
   }
 });
 
-app.put("/tasks/:id", async (req, res) => {
+app.put("/tasks/:id", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
-   const { title, description, status, priority, due_date } = req.body;
+    const { title, description, status, priority, due_date } = req.body;
 
     const result = await pool.query(
-  `UPDATE tasks
-   SET title = $1,
-       description = $2,
-       status = $3,
-       priority = $4,
-       due_date = $5
-   WHERE id = $6
-   RETURNING *`,
-  [title, description || null, status, priority, due_date || null, id]
-);
+      `UPDATE tasks
+       SET title = $1,
+           description = $2,
+           status = $3,
+           priority = $4,
+           due_date = $5
+       WHERE id = $6 AND user_id = $7
+       RETURNING *`,
+      [title, description || null, status, priority, due_date || null, id, req.user.userId]
+    );
+
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Task not found" });
     }
